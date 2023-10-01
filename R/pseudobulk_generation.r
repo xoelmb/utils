@@ -64,10 +64,10 @@ dimred.auto <- function (object, lognorm = T, scale.factor = 10000, plot.vars = 
     return(object)
 }
 
-example <- function (seurat.dataname = "ifnb", group.vars = "stim", cluster.var = "seurat_annotations", 
-    sel.method = "simspec", agg.method = "average", simspec.ratio = 1/100, 
-    samples.per.group = 6, cells.per.sample = NULL, lognorm = T, 
-    scale.factor = 10000, verbose = T, return. = F) 
+example.pseudobulk_generate <- function (seurat.dataname = "ifnb", group.vars = "stim", cluster.var = "seurat_annotations", 
+    sel.method = "simspec", agg.method = "aggregate", simspec.ratio = 1/300, 
+    samples.per.group = 3, cells.per.sample = NULL, lognorm = T, 
+    scale.factor = 10000, verbose = T, return. = F, ...) 
 {
     require(Seurat)
     require(SeuratData)
@@ -78,7 +78,8 @@ example <- function (seurat.dataname = "ifnb", group.vars = "stim", cluster.var 
     psbk <- generate.pseudobulk(object, group.vars = group.vars, 
         cluster.var = cluster.var, simspec.ratio = simspec.ratio, 
         sel.method = sel.method, agg.method = agg.method, samples.per.group = samples.per.group, 
-        cells.per.sample = cells.per.sample, verbose = verbose)
+        cells.per.sample = cells.per.sample, verbose = verbose, 
+        ...)
     psbk <- dimred.auto(psbk, scale.factor = scale.factor, lognorm = lognorm, 
         plot.vars = c(cluster.var, group.vars))
     if (return.) {
@@ -146,8 +147,10 @@ generate.pseudobulk <- function (object, group.vars = NULL, cluster.var = NULL, 
                 verbose = verbose, method = agg.method, annotation.vars = annotation.vars, 
                 ...)
             psbk <- rename.seurat.cells(psbk, psbk.lab)
+            lab.split <- strsplit(psbk.lab, split = "_rep", fixed = T)[[1]]
             psbk$pseudobulk.id <- psbk.lab
-            psbk$rep <- strsplit(psbk.lab, split = "_rep", fixed = T)[[1]][2]
+            psbk$pseudobulk.group <- lab.split[1]
+            psbk$pseudobulk.rep <- lab.split[2]
             psbk
         }))
         return(psbk)

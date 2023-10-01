@@ -126,6 +126,26 @@ rename.seurat.cells <- function (object, new.names, assays = c("RNA"), slots = c
     return(newobj)
 }
 
+restore.factors <- function (x, reference, factor.vars = NULL) 
+{
+    if (is.null(factor.vars)) {
+        factor.vars <- colnames(reference)[unlist(lapply(reference, 
+            is.factor))]
+    }
+    for (fct.var in factor.vars) {
+        if (!fct.var %in% colnames(x)) {
+            (next)()
+        }
+        if (!all(unique(x[, fct.var]) %in% levels(reference[, 
+            fct.var]))) {
+            (next)()
+        }
+        x[, fct.var] <- factor(as.character(x[, fct.var]), levels = levels(reference[, 
+            fct.var]))
+    }
+    return(x)
+}
+
 save_functions <- function (basename = "functions", functions = NULL, envir.get = NULL, 
     R_script = T, Rda = T) 
 {
@@ -170,4 +190,26 @@ set_parallel <- function (slurm_check = T, max_cores = Inf, future = T, future.s
         future::plan(strategy = future.strategy, workers = n.cores)
     }
     return(n.cores)
+}
+
+summarise.metadata <- function (meta.data, group.vars, annotation.vars, keep_factors = T, 
+    num.fun = mean, char.fun = function(x) {
+        paste(unique(as.character(x)), collapse = ",")
+    }) 
+{
+    d <- meta.data
+    require(dplyr)
+    sum.d <- d %>% group_by_at(group.vars) %>% select_at(annotation.vars) %>% 
+        summarise_all(function(x) {
+            if (is.numeric(x)) {
+                num.fun(x)
+            }
+            else {
+                char.fun(x)
+            }
+        }) %>% as.data.frame()
+    if (keep_factors) {
+        sum.d <- restore.factors(x = sum.d, reference = meta.data)
+    }
+    return(sum.d)
 }
